@@ -1,0 +1,25 @@
+name: dvc-cml
+on: [push]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    container: docker://dvcorg/cml-py3:latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: iterative/setup-cml@v1
+      - name: install requirements
+        env:
+          REPO_TOKEN: ${{ secrets.CML_GITHUB_ACCESS_TOKEN }}
+        run: |
+          pip install -r requirements.txt
+          dvc repro
+          # git fetch --prune
+      - name: train model
+        env:
+          REPO_TOKEN: ${{ secrets.CML_GITHUB_ACCESS_TOKEN }}
+        run: |
+          dvc metrics diff --show-md main >> report.md
+
+          echo "## Validating results by region" >> report.md
+          echo "![](./by_region.png)" >> report.md
+          cml comment create report.md
